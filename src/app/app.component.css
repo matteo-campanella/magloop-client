@@ -1,0 +1,7 @@
+button:enabled{
+  background: olive;
+}
+
+button:disabled{
+  background: red;
+}
