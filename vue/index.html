@@ -1,0 +1,150 @@
+<head>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap/dist/css/bootstrap.min.css"/>
+    <link type="text/css" rel="stylesheet" href="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css"/>
+</head>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://unpkg.com/babel-polyfill@latest/dist/polyfill.min.js"></script>
+<script src="https://unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.js"></script>
+<style>
+button:enabled{
+  background: olive;
+}
+
+button:disabled{
+  background: red;
+}
+</style>
+<div id="app">
+    <h1>{{ title }}</h1>
+    <table>
+        <tr v-for="(value, key) in response">
+          <td>
+            {{ value }}
+          </td>
+          <td>
+            {{ key }}
+          </td>
+        </tr>
+    </table>
+    <div>
+        <button v-on:click="decreaseStepSize">-</button>
+        Step Size: {{ steps[stepIndex] }}
+        <button v-on:click="increaseStepSize">+</button>
+    </div>
+    <div>
+        <button v-on:click="decreasePosition" v-bind:disabled="lock">-</button>
+        Position: {{ position }}
+        <button v-on:click="increasePosition" v-bind:disabled="lock">+</button>
+    </div>
+    <div>
+        <input v-model="frequency">kHz
+        <button v-on:click="saveFrequency(frequency)" v-bind:disabled="lock">Save Frequency</button>
+        <button v-on:click="getPosition(frequency)" v-bind:disabled="lock">Get Position</button>
+    </div>
+    <div>
+        STATUS: {{ status }}
+    </div>
+</div>
+<script>
+    var app = new Vue({
+    el: '#app',
+    data: {
+        title: 'MagLoop Controller',
+        position : 0,
+        minPosition : 0,
+        maxPosition : 0,
+        steps : [1, 5 , 10 , 15 , 20 , 50 , 100],
+        stepIndex : 0,
+        url : 'http://magloop.local/api/',
+        lock : true,
+        status : '',
+        frequency : 0,
+        response: {}
+    },
+    mounted () {
+        this.getActualPosition();
+    },    
+    methods: {
+        increaseStepSize: function(event) {
+            this.stepIndex = (this.stepIndex < this.steps.length - 1 ) ? this.stepIndex + 1 :  this.steps.length - 1;
+        },
+        decreaseStepSize: function(event) {
+            this.stepIndex = (this.stepIndex > 0 ) ? this.stepIndex - 1 :  0;
+        },
+        increasePosition: function(event) {
+            let newpos;
+
+            newpos = this.position + this.steps[this.stepIndex];
+            this.position = (newpos < this.maxPosition ) ? newpos :  this.maxPosition;
+            this.updatePosition(this.position);            
+        },
+        decreasePosition: function(event) {
+            let newpos;
+
+            newpos = this.position - this.steps[this.stepIndex];
+            this.position = (newpos < this.minPosition ) ? this.minPosition : newpos;
+            this.updatePosition(this.position);            
+        },
+        updatePosition: function(pos) {
+            this.lock = true;
+            const request = { 'position' : this.position };
+            axios.post(this.url, request)
+            .then(response => {
+                this.position = response.data.position;
+                this.handleSuccess(response.data);
+            },
+            err => {
+                this.handleError(err);
+            })
+        },
+        getActualPosition: function() {
+            axios.get(this.url)
+            .then(response => {
+                this.position = response.data.position;
+                this.minPosition = response.data.minPosition;
+                this.maxPosition = response.data.maxPosition;
+                this.handleSuccess(response.data);
+            },
+            err => {
+                this.handleError(err);
+            })
+        },
+        getPosition: function(frequency) {
+            this.lock = true;
+            const request = { 'frequency' : frequency };
+            axios.post(this.url, request)
+            .then(response => {
+                this.position = response.data.position;
+                this.handleSuccess(response.data);
+            },
+            err => {
+                this.handleError(err);
+            })
+        },
+        saveFrequency: function(frequency) {
+            this.lock = true;
+            const request = { 'position' : this.position, 'frequency' : frequency };
+            axios.post(this.url, request)
+            .then(response => {
+                this.handleSuccess(response.data);
+            },
+            err => {
+                this.handleError(err);
+            })
+        },
+        handleSuccess: function(response) {
+            console.log(response);
+            this.status = 'OK';
+            this.response = response;
+            this.lock = false;
+        },
+        handleError(err) {
+            console.log(err);
+            this.status = err.message;
+            this.lock = false;
+        }
+    }            
+
+})
+</script>
