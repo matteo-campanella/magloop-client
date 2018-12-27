@@ -15,34 +15,46 @@ button:disabled{
   background: red;
 }
 </style>
-<div id="app">
+<div id="app" class="container">
     <h1>{{ title }}</h1>
-    <table>
-        <tr v-for="(value, key) in response">
-          <td>
-            {{ value }}
-          </td>
-          <td>
-            {{ key }}
-          </td>
-        </tr>
-    </table>
-    <div>
-        <button v-on:click="decreaseStepSize">-</button>
-        Step Size: {{ steps[stepIndex] }}
-        <button v-on:click="increaseStepSize">+</button>
+    <div class="row">
+        <template>
+            <b-table striped hover :items="[ response ]"></b-table>
+        </template>
     </div>
-    <div>
-        <button v-on:click="decreasePosition" v-bind:disabled="lock">-</button>
-        Position: {{ position }}
-        <button v-on:click="increasePosition" v-bind:disabled="lock">+</button>
+    <div class="row">
+        <div class="col-sm">
+            Step Size 
+            <b-button v-on:click="decreaseStepSize">
+                -
+            </b-button>
+            {{ steps[stepIndex] }} 
+            <b-button v-on:click="increaseStepSize">
+                +
+            </b-button>  
+        </div> 
+        <div class="col-sm">
+            Position
+            <b-button v-bind:disabled="lock" v-on:click="decreasePosition">
+                    -
+            </b-button>        
+             {{ position }} 
+            <b-button v-bind:disabled="lock" v-on:click="increasePosition">
+                    +
+            </b-button>         
+        </div>
+        <div class="col-lg">
+            <b-input-group prepend="KHz">
+                    <b-form-input v-model="frequency" type="text" placeholder="Frequency"></b-form-input>
+                    <b-input-group-append>
+                        <b-btn v-on:click="saveFrequency(frequency)" v-bind:disabled="lock">Save</b-btn>
+                        <b-btn v-on:click="getPosition(frequency)" v-bind:disabled="lock">Retrieve</b-btn>
+                    </b-input-group-append>
+            </b-input-group>
+        </div>                
     </div>
-    <div>
-        <input v-model="frequency">kHz
-        <button v-on:click="saveFrequency(frequency)" v-bind:disabled="lock">Save Frequency</button>
-        <button v-on:click="getPosition(frequency)" v-bind:disabled="lock">Get Position</button>
-    </div>
-    <div>
+    <hr/>
+    <div class="row">
         STATUS: {{ status }}
     </div>
 </div>
@@ -60,7 +72,7 @@ button:disabled{
         lock : true,
         status : '',
         frequency : 0,
-        response: {}
+        response: { position: 0, frequency:0, minPosition: 0, maxPosition: 0 }
     },
     mounted () {
         this.getActualPosition();
