@@ -49,13 +49,24 @@ button:disabled{
                     <b-input-group-append>
                         <b-btn v-on:click="saveFrequency(frequency)" v-bind:disabled="lock">Save</b-btn>
                         <b-btn v-on:click="getPosition(frequency)" v-bind:disabled="lock">Retrieve</b-btn>
+                        <b-btn v-on:click="getMemList" v-bind:disabled="lock">MemList</b-btn>
                     </b-input-group-append>
             </b-input-group>
-        </div>                
+        </div>              
     </div>
     <hr/>
     <div class="row">
         STATUS: {{ status }}
+    </div>
+    <div>
+        <b-modal @hidden="unlockButtons" ref="memoryListDialog" title="Memory List">
+            <template>
+                <b-table @row-dblclicked='setPositionFromMemory' striped hover :items="memoryList" :fields="[{key: '0', label: 'Position'},{key: '1', label: 'Frequency', sortable: 'true'}]"></b-table>
+            </template>
+            <div slot="modal-footer">
+                {{ memoryList.length }} memory slots
+            </div>            
+        </b-modal>
     </div>
 </div>
 <script>
@@ -72,7 +83,8 @@ button:disabled{
         lock : true,
         status : '',
         frequency : 0,
-        response: { position: 0, frequency:0, minPosition: 0, maxPosition: 0 }
+        response: { position: 0, frequency:0, minPosition: 0, maxPosition: 0 },
+        memoryList: []
     },
     mounted () {
         this.getActualPosition();
@@ -100,7 +112,7 @@ button:disabled{
         },
         updatePosition: function(pos) {
             this.lock = true;
-            const request = { 'position' : this.position };
+            const request = { 'position' : pos };
             axios.post(this.url, request)
             .then(response => {
                 this.position = response.data.position;
@@ -134,6 +146,17 @@ button:disabled{
                 this.handleError(err);
             })
         },
+        getMemList: function() {
+            this.lock = true;
+            axios.get(this.url+'memory')
+            .then(response => {
+                this.memoryList = response.data;
+                this.$refs.memoryListDialog.show();
+            },
+            err => {
+                this.handleError(err);
+            }) 
+        },
         saveFrequency: function(frequency) {
             this.lock = true;
             const request = { 'position' : this.position, 'frequency' : frequency };
@@ -145,16 +168,23 @@ button:disabled{
                 this.handleError(err);
             })
         },
-        handleSuccess: function(response) {
-            console.log(response);
+        handleSuccess: function(data) {
+            console.log(data);
             this.status = 'OK';
-            this.response = response;
+            this.response = data;
             this.lock = false;
         },
-        handleError(err) {
+        handleError: function(err) {
             console.log(err);
             this.status = err.message;
             this.lock = false;
+        },
+        unlockButtons: function() {
+            this.lock = false;
+        },
+        setPositionFromMemory: function(item, index, event) {
+            this.$refs. memoryListDialog.hide();
+            this.updatePosition(item[0]);
         }
     }            
 
